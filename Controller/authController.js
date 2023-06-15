@@ -1,123 +1,136 @@
-const JWT = require('jsonwebtoken')
-const comparePass = require('../helpers/authHelper')
-const userModel = require('../model/userModel.js')
+const bcrypt=require('bcrypt');
+const jwt=require('jsonwebtoken')
+const signUpStructure=require('../model/signup')
+ const courseStructure=require('../model/course')
 
-
- const registerController = async(req,res)=>{
-  try{
-   const {name, email, password, phone, address} = req.body
-
-   if(!name){
-    return res.send({message: "Name is required"})
-   }
-   if(!email){
-    return res.send({message: "email is required"})
-   }
-   if(!password){
-    return res.send({message: "Password is required"})
-   }
-   if(!phone){
-    return res.send({message: "phone is required"})
-   }
-   if(!address){
-    return res.send({message: "address is required"})
-   }
-   
-
-   const existingUser = await userModel.findOne({email})
-   
-//    Existing user
-   if(existingUser){
-    return res.status(200).send({
-        success:true,
-        message: "Already Register Please Login again"
-    })
-   }
-
-//    Registering the user
-   const hashPassword = await comparePass.hashPass(password)
-//    save
-     const user =await new userModel({name, email, password: hashPassword, phone, address}).save()
-     
-
-     res.status(201).send({
-        success: true,
-        message: "User Register Successfully",
-        user
-     })
-
-
-  }catch(error){
-  console.log(error)
-  res.status(500).send({
-    success: false,
-    message: "Error in Registeration",
-    error
-  })
-  }
+var login;
+const jwt_secreat="saravanan"
+const signUpController=async(req,res)=>{
+   const data=req.body;
+   console.log(data);
+ await bcrypt.hash(data.password,10,async (err,hash)=>{
+    if(err){
+        console.log(err);
+    }else {
+        
+        const signDocument= new signUpStructure({
+            name:data.name,
+            email:data.email,
+            password:hash,
+            address : data.address,
+            mobile:data.mobile,
+            data:new Date().toLocaleString()
+           })
+           const result= await signDocument.save()
+           console.log(result);
+           res.send(result)
+          
+    } 
+   })
 }
 
-// POST Login
- const loginController = async(req, res)=>{
-   try{
-   const {email, password} = req.body
 
-//    Validation
-     if(!email || !password){
-        return res.status(404).send({
-            success:true,
-            message: "Invalid email or password",
-        })
-     }
 
-     const user = await userModel.findOne({email})
-     if(!user){
-        res.status(404).send({
-            success:false,
-            message: "Email is not registered",
-            error
+
+
+const signinController=async(req,res)=>{
+    var fetchpassword;
+    var fetchuser;
+    var fetchfirstName;
+    var name;
+    const data=req.body;
+    console.log(data);
+   const querey={email:data.email}
+
+   const fetchData=await signUpStructure.find(querey)
+      fetchData.map((item)=>{
+       fetchpassword=item.password;
+       fetchuser=item.email;
+       fetchfirstName=item.name;
+    })
+console.log(fetchuser,fetchfirstName);
+    if(data.email === fetchuser ){
+
+if( await bcrypt.compare(data.password,fetchpassword))
+{
+   const token= await jwt.sign({email:data.email},jwt_secreat,{expiresIn:"15m"})
+   name=fetchuser
+fetchfirstName=true;
+console.log(fetchfirstName,token,name);
+    res.send({fetchfirstName,token,name})
+
+}
+        // await bcrypt.compare(data.password,fetchpassword,(err,valid)=>{
+            // if(err){
+            //     console.log("error");
+            //     res.send("err")
+            // }
+            // else{
+            //     console.log(valid);
+            //     login=fetchfirstName;
+            //     res.send(fetchfirstName)
+            // }
+       // })
+
+    }
+    else{
+        login=false;
+    }
+  
+}
+
+
+const updateController=async(req,res)=>{
+            const data=req.body.data;
+        console.log(req.body.data);
+    const querey={email:req.body.names}
+        console.log(querey);
+    const fetchData=await courseStructure.find(querey)
+   if(fetchData){
+    const courseDocument= new courseStructure({
+      
+        id:Date(),
+        email:req.body.names,
+        course: data.course,
+        title:  data.title,
+        title2:  data.title2,
+        img: data.img,
+        time: data.time,
+        problem: data.problem,
+        ratings:  data.ratings,
+        count:  data.count,
+        price:  data.price,
+        detailhead:  data.detailhead, 
+        detailcontent:  data.detailcontent,
+        detailurl: data.detailurl,
     
-          })
-     }
-     const match = await comparePass.comparePass(password, user.password)
-     if(!match){
-        return res.status(200).send({
-            success: false,
-            message: "Invalid Password"
-        })
-     }
-
-    //  token
-    const token = await JWT.sign({_id: user.id}, process.env.Secret_Key)
-    res.status(200).send({
-        success: true,
-        message: "Login successfully",
-        user:{
-            name:user.name,
-            email:user.email,
-            phone:user.phone,
-            address:user.address,
-            // role: user.role
-        },
-        token: token
-    })
-   } catch(error){
-      console.log(error)
-      res.status(500).send({
-        success:false,
-        message: "Error in Login",
-        error
-
-      })
+       })
+       const result= await courseDocument.save()
+       console.log(result);
+       res.status(200).send({message:"course enrollement sucessfull",result})
+   }else{    
+   res.send({message:"complete a course duration to take another course"})
    }
 }
+const courseDetail=async(req,res)=>{
 
-// test Controller
+    const user=req.body
+    console.log(user);
+    const querey={email:user.names}
+    const fetchData=await courseStructure.find(querey)
+    console.log(fetchData);
+    res.send({message:"sucess",fetchData})
 
-const testController = (req,res)=>{
-   res.send("protected routes");
+
 }
 
-module.exports = {
-   registerController, loginController, testController
-}
+
+
+
+
+
+
+
+
+
+module.exports={signUpController,signinController,updateController,courseDetail}

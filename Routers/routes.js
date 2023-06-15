@@ -1,13 +1,11 @@
-const express = require('express')
-const route = express.Router()
-const {registerController, loginController, testController} = require('../Controller/authController')
-const {requireSignIn} = require('../middlewares/middleware')
-
-
-route.post('/register', registerController)
-
-// Login Route
-route.post('/login', loginController)
-route.get('/test',requireSignIn,  testController)
-
-module.exports = route
+const express=require('express')
+const route=express();
+const order=require('../payment/payment')
+const signController=require('../Controller/authController');
+route.post('/signup',signController.signUpController);
+route.post('/signin',signController.signinController);
+route.post('/create/order',order.createOrder)
+route.post("/api/payment/verify",order.orderVerify)
+route.post("/update",signController.updateController)
+route.post('/usercourse',signController.courseDetail)
+module.exports=route;
