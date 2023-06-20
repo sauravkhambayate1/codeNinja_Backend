@@ -8,4 +8,5 @@ route.post('/create/order',order.createOrder)
 route.post("/api/payment/verify",order.orderVerify)
 route.post("/update",signController.updateController)
 route.post('/usercourse',signController.courseDetail)
+route.post('/multiple',signController.tryController)
 module.exports=route;
